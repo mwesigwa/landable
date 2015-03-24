@@ -15,6 +15,9 @@ Landable.configure do |config|
   config.database_schema_prefix = 'dummy'
 
   config.audit_flags = %w(loans apr)
+
+  config.hutch_enable = true
+  config.hutch_enable_confirms = true
 end
 
 # Configure asset uploads. Assets will be uploaded to public/uploads by default.
