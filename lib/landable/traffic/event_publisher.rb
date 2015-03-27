@@ -3,24 +3,33 @@ module Landable
     attr_accessor :page_view, :visit, :tracker, :event
 
     def initialize(tracker, page_view, meta = {})
-      event_type = PATH_TO_EVENT_MAPPING[page_view.path]
+      event_type = event_mapping[page_view.path]
       if event_type.kind_of?(Hash)
         request_type = page_view.http_method
         event_type = event_type[request_type]
       end
       return unless event_type
+      @page_view = page_view
+
       @tracker = tracker
       @visit = tracker.visit
-      @page_view = page_view
       @event = tracker.create_event(event_type, meta)
     end
 
     def enabled?
-      @enabled ||= Landable.configuration.enable_hutch && defined?(Hutch) && Hutch.connected?
+      @enabled ||= Landable.configuration.hutch_enable && defined?(Hutch) && Hutch.connected?
     end
 
     def queue
       @queue ||= Landable.configuration.hutch_queue
+    end
+
+    def event_mapping
+      @event_mapping ||= Landable.configuration.event_mapping
+    end
+
+    def application_name
+      @application_name ||= Landable.configuration.application_name
     end
 
     def publish
@@ -28,17 +37,24 @@ module Landable
       Hutch.publish(queue, message)
     end
 
+    def get_owner
+      if visit.owner_id.present?
+        owner = Landable::Traffic::Owner.find(visit.owner_id).owner
+      end
+    end
+
     def message
       referer = visit.referer
       attribution = visit.attribution
-      {
-        event_id: event.id,
+      { event_id: event.id,
         event: event.event_type,
-        brand: 1,
+        request_type: page_view.http_method,
+        brand: application_name,
         visit_id: visit.id,
         created_at: visit.created_at,
         cookie_id: visit.cookie_id,
         owner_id: visit.owner_id,
+        owner: get_owner,
         referer_id: referer.try(:id),
         domain_id: referer.try(:domain_id),
         domain: referer.try(:domain),
@@ -82,7 +98,10 @@ module Landable
         source_id: attribution.try(:source_id),
         source: attribution.try(:source),
         target_id: attribution.try(:target_id),
-        target: attribution.try(:target)
+        target: attribution.try(:target),
+        page_view_id: @page_view.page_view_id,
+        path_id: @page_view.path_id,
+        path: @page_view.path
       }
     end
   end
