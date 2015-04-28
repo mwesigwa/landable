@@ -23,7 +23,7 @@ module Landable
 
       let(:message_keys) do
         [:ad_group, :ad_type, :bid_match_type, :campaign, :content, :creative, :device_type,
-         :experiment, :keywords, :match_type, :medium, :network, :placement, :position,
+         :experiment, :keyword, :match_type, :medium, :network, :placement, :position,
          :search_term, :source, :target]
       end
 
@@ -39,7 +39,6 @@ module Landable
 
       it 'should properly properly set the attribution data and send it within a message' do
         get :my_path, attribution
-        # binding.pry
         message_keys.each do |attribute|
           expect(published_message[attribute]).to eq("test_#{attribute}")
         end
